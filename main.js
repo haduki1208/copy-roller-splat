@@ -127,7 +127,7 @@ class Manager {
             targets: this.player.element,
             translateX: CELL_SIZE * (this.player.x - 1),
             translateY: CELL_SIZE * (this.player.y - 1),
-            easing: 'easeInOutQuad',
+            easing: 'linear',
             duration: MOVING_BALL_RENDER_DURATION,
         }).finished.then(() => {
             this._isMovingBall = false;
