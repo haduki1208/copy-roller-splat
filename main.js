@@ -116,7 +116,7 @@ class Manager {
 
     __moveField(addX = 0, addY = 0) {
         while (true) {
-            if (this.field[this.player.y + addY][thisbind.player.x + addX].state === 0) {
+            if (this.field[this.player.y + addY][this.player.x + addX].state === 0) {
                 return;
             }
             this.field[this.player.y + addY][this.player.x + addX].state = 2;
