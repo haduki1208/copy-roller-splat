@@ -81,8 +81,17 @@ class Manager {
                 }
             }
         }
-        this.player.element.style.top = `${this.player.y * 36}px`;
-        this.player.element.style.left = `${this.player.x * 36}px`;
+        // this.player.element.style.top = `${this.player.y * 36}px`;
+        // this.player.element.style.left = `${this.player.x * 36}px`;
+        const top = Number.parseInt(this.player.element.style.top);
+        const left = Number.parseInt(this.player.element.style.left);
+        anime({
+            targets: this.player.element,
+            translateX: 36 * (this.player.x - left),
+            translateY: 36 * (this.player.y - top),
+            easing: 'easeInOutQuad',
+            duration: 200
+        });
     }
 
     onKeyDown() {
@@ -109,7 +118,7 @@ class Manager {
             }
             this.render();
             if (this.__isFinished()) {
-                setTimeout(() => alert('クリア!'), 0);
+                setTimeout(() => alert('クリア!'), 200);
             }
         });
     }
