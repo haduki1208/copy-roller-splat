@@ -1,45 +1,62 @@
 // roller splat
+const CELL_SIZE = 36;
+const MAX_WIDTH = 9;
+const MAX_HEIGHT = 10;
+const MOVING_BALL_RENDER_DURATION = 200;
+const COLOR_WALL = 'black';
+const COLOR_NOT_PASSED_CELL = 'white';
+const COLOR_PASSED_CELL = 'green';
+
 class Player {
     x = 0;
     y = 0;
     element = document.querySelector('#player');
 }
 
+class Cell {
+    state = 0;
+    constructor(element) {
+        this.element = element;
+    }
+}
+
 class Manager {
-    TABLE = document.querySelector('table');
-    MAX_WIDTH = 9;
-    MAX_HEIGHT = 10;
+    table = document.querySelector('table');
     player = new Player();
     field = [];
 
+    // ボールが動いている間、onkeydownイベントを発生させないよう監視する
+    _isMovingBall = false;
+    // ボールが通過したマスを順番に塗っていくため記録する
+    _passedCells = [];
+
     constructor() {
-        this.initTable();
-        this.loadTable();
+        this.initField();
+        this.loadField();
         this.render();
         this.onKeyDown();
     }
 
-    initTable() {
+    initField() {
         // テーブルつくる
-        for (let i = 0; i < this.MAX_HEIGHT; i++) {
+        for (let i = 0; i < MAX_HEIGHT; i++) {
             const tr = document.createElement('tr');
             this.field[i] = [];
-            for (let j = 0; j < this.MAX_WIDTH; j++) {
+            for (let j = 0; j < MAX_WIDTH; j++) {
                 const td = document.createElement('td');
-                this.field[i][j] = {
-                    state: 0,
-                    element: td,
-                };
+                this.field[i][j] = new Cell(td);
                 tr.appendChild(td);
             }
-            this.TABLE.appendChild(tr);
+            this.table.appendChild(tr);
         }
     }
 
-    loadTable() {
+    loadField() {
         // ステージ情報を読み込み
         this.player.x = 1;
         this.player.y = 1;
+        this.player.element.style.top = `${CELL_SIZE * this.player.y}px`;
+        this.player.element.style.left = `${CELL_SIZE * this.player.x}px`;
         const preset = [
             [0, 0, 0, 0, 0, 0, 0, 0, 0],
             [0, 2, 1, 0, 1, 1, 1, 0, 0],
@@ -52,91 +69,114 @@ class Manager {
             [0, 1, 1, 1, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0, 0],
         ];
-        for (let i = 0; i < this.MAX_HEIGHT; i++) {
-            for (let j = 0; j < this.MAX_WIDTH; j++) {
+        for (let i = 0; i < MAX_HEIGHT; i++) {
+            for (let j = 0; j < MAX_WIDTH; j++) {
                 this.field[i][j].state = preset[i][j];
             }
         }
     }
 
     render() {
-        for (let i = 0; i < this.MAX_HEIGHT; i++) {
-            for (let j = 0; j < this.MAX_WIDTH; j++) {
+        if (this._isMovingBall) {
+            this._renderFieldInOrder();
+        } else {
+            this._renderFieldInAll();
+        }
+        this._renderBall();
+    }
+
+    _renderFieldInAll() {
+        for (let i = 0; i < MAX_HEIGHT; i++) {
+            for (let j = 0; j < MAX_WIDTH; j++) {
                 const { state, element } = this.field[i][j];
                 switch (state) {
                     case 0:
                         // 壁
-                        element.style.backgroundColor = 'black';
+                        element.style.backgroundColor = COLOR_WALL;
                         break;
                     case 1:
                         // まだ通っていない道
-                        element.style.backgroundColor = 'white';
+                        element.style.backgroundColor = COLOR_NOT_PASSED_CELL;
                         break;
                     case 2:
                         // すでに通った道
-                        element.style.backgroundColor = 'green';
+                        element.style.backgroundColor = COLOR_PASSED_CELL;
                         break;
                     default:
                         break;
                 }
             }
         }
-        // this.player.element.style.top = `${this.player.y * 36}px`;
-        // this.player.element.style.left = `${this.player.x * 36}px`;
-        const top = Number.parseInt(this.player.element.style.top);
-        const left = Number.parseInt(this.player.element.style.left);
+    }
+
+    _renderFieldInOrder() {
+        if (!this._passedCells.length) {
+            return;
+        }
+        const duration = MOVING_BALL_RENDER_DURATION / this._passedCells.length;
+        this._passedCells.forEach(({ element }, i) => {
+            setTimeout(() => {
+                element.style.backgroundColor = COLOR_PASSED_CELL;
+            }, duration * i);
+        });
+        this._passedCells.length = 0;
+    }
+
+    _renderBall() {
         anime({
             targets: this.player.element,
-            translateX: 36 * (this.player.x - left),
-            translateY: 36 * (this.player.y - top),
+            translateX: CELL_SIZE * (this.player.x - 1),
+            translateY: CELL_SIZE * (this.player.y - 1),
             easing: 'easeInOutQuad',
-            duration: 200
-        });
+            duration: MOVING_BALL_RENDER_DURATION,
+        }).finished.then(() => {
+            this._isMovingBall = false;
+        })
+    }
+
+    _keydownMap = {
+        // 左
+        37: () => this._moveField(-1, 0),
+        // 上
+        38: () => this._moveField(0, -1),
+        // 右
+        39: () => this._moveField(1, 0),
+        // 下
+        40: () => this._moveField(0, 1),
     }
 
     onKeyDown() {
         document.body.addEventListener('keydown', e => {
-            switch (e.keyCode) {
-                case 37:
-                    // left
-                    this.__moveField(-1, 0);
-                    break;
-                case 38:
-                    // up
-                    this.__moveField(0, -1);
-                    break;
-                case 39:
-                    // right
-                    this.__moveField(1, 0);
-                    break;
-                case 40:
-                    // down
-                    this.__moveField(0, 1);
-                    break;
-                default:
-                    break;
+            if (!this._keydownMap.hasOwnProperty(e.keyCode) || this._isMovingBall) {
+                return;
             }
+            this._isMovingBall = true;
+            this._keydownMap[e.keyCode]();
             this.render();
-            if (this.__isFinished()) {
-                setTimeout(() => alert('クリア!'), 200);
+            if (this._isFinished()) {
+                // アラートを出したあと若干動いたので1.1倍して猶予をもたせる
+                setTimeout(() => {
+                    alert('クリア!');
+                }, MOVING_BALL_RENDER_DURATION * 1.1);
             }
         });
     }
 
-    __moveField(addX = 0, addY = 0) {
+    _moveField(addX, addY) {
         while (true) {
             if (this.field[this.player.y + addY][this.player.x + addX].state === 0) {
                 return;
             }
             this.field[this.player.y + addY][this.player.x + addX].state = 2;
+            this._passedCells.push(this.field[this.player.y + addY][this.player.x + addX]);
             this.player.x += addX;
             this.player.y += addY;
         }
     }
 
-    __isFinished() {
-        for (let i = 0; i < this.MAX_HEIGHT; i++) {
-            for (let j = 0; j < this.MAX_WIDTH; j++) {
+    _isFinished() {
+        for (let i = 0; i < MAX_HEIGHT; i++) {
+            for (let j = 0; j < MAX_WIDTH; j++) {
                 if (this.field[i][j].state === 1) {
                     return false;
                 }
