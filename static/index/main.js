@@ -3,7 +3,7 @@ import Cell from "./Cell.js";
 const CELL_SIZE = 36;
 const MAX_WIDTH = 9;
 const MAX_HEIGHT = 10;
-const MOVING_BALL_RENDER_DURATION = 200;
+const MOVING_BALL_RENDERING_DURATION = 40;
 const COLOR_WALL = "black";
 const COLOR_NOT_PASSED_CELL = "white";
 const COLOR_PASSED_CELL = "green";
@@ -66,6 +66,7 @@ class App {
       this._renderFieldInAll();
     }
     this._renderBall();
+    this._passedCells.length = 0;
   }
 
   _renderFieldInAll() {
@@ -96,13 +97,12 @@ class App {
     if (!this._passedCells.length) {
       return;
     }
-    const duration = MOVING_BALL_RENDER_DURATION / this._passedCells.length;
+    const duration = MOVING_BALL_RENDERING_DURATION;
     this._passedCells.forEach(({ element }, i) => {
       setTimeout(() => {
         element.style.backgroundColor = COLOR_PASSED_CELL;
       }, duration * i);
     });
-    this._passedCells.length = 0;
   }
 
   _renderBall() {
@@ -111,7 +111,7 @@ class App {
       translateX: CELL_SIZE * (this.player.x - 1),
       translateY: CELL_SIZE * (this.player.y - 1),
       easing: "linear",
-      duration: MOVING_BALL_RENDER_DURATION
+      duration: MOVING_BALL_RENDERING_DURATION * this._passedCells.length
     }).finished.then(() => {
       this._isMovingBall = false;
     });
@@ -136,19 +136,13 @@ class App {
       this._isMovingBall = true;
       this._keydownMap[e.keyCode]();
       this._render();
-      if (this._isFinished()) {
-        // アラートを出したあと若干動いたので1.1倍して猶予をもたせる
-        setTimeout(() => {
-          alert("クリア!");
-        }, MOVING_BALL_RENDER_DURATION * 1.1);
-      }
     });
   }
 
   _moveField(addX, addY) {
     while (true) {
       if (this.field[this.player.y + addY][this.player.x + addX].state === 0) {
-        return;
+        break;
       }
       this.field[this.player.y + addY][this.player.x + addX].state = 2;
       this._passedCells.push(
@@ -156,6 +150,13 @@ class App {
       );
       this.player.x += addX;
       this.player.y += addY;
+    }
+
+    if (this._isFinished()) {
+      // アラートを出したあと若干動いたので1.1倍して猶予をもたせる
+      setTimeout(() => {
+        alert("クリア!");
+      }, MOVING_BALL_RENDERING_DURATION * this._passedCells.length * 1.1);
     }
   }
 
