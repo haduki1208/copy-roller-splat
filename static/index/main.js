@@ -1,4 +1,5 @@
-// roller splat
+import Player from "./Player.js";
+import Cell from "./Cell.js";
 const CELL_SIZE = 36;
 const MAX_WIDTH = 9;
 const MAX_HEIGHT = 10;
@@ -7,20 +8,7 @@ const COLOR_WALL = "black";
 const COLOR_NOT_PASSED_CELL = "white";
 const COLOR_PASSED_CELL = "green";
 
-class Player {
-  x = 0;
-  y = 0;
-  element = document.querySelector("#player");
-}
-
-class Cell {
-  state = 0;
-  constructor(element) {
-    this.element = element;
-  }
-}
-
-class Manager {
+class App {
   table = document.querySelector("table");
   player = new Player();
   field = [];
@@ -30,14 +18,14 @@ class Manager {
   // ボールが通過したマスを順番に塗っていくため記録する
   _passedCells = [];
 
-  constructor() {
-    this.initField();
-    this.loadField();
-    this.render();
-    this.onKeyDown();
+  async init() {
+    this._initField();
+    await this._loadField();
+    this._render();
+    this._onKeyDown();
   }
 
-  initField() {
+  _initField() {
     // テーブルつくる
     for (let i = 0; i < MAX_HEIGHT; i++) {
       const tr = document.createElement("tr");
@@ -51,32 +39,27 @@ class Manager {
     }
   }
 
-  loadField() {
-    // ステージ情報を読み込み
-    this.player.x = 1;
-    this.player.y = 1;
-    this.player.element.style.top = `${CELL_SIZE * this.player.y}px`;
-    this.player.element.style.left = `${CELL_SIZE * this.player.x}px`;
-    const preset = [
-      [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 2, 1, 0, 1, 1, 1, 0, 0],
-      [0, 1, 1, 1, 1, 1, 1, 0, 0],
-      [0, 1, 1, 1, 1, 1, 1, 1, 0],
-      [0, 1, 1, 1, 1, 0, 1, 1, 0],
-      [0, 1, 1, 1, 1, 0, 1, 1, 0],
-      [0, 1, 1, 1, 1, 1, 1, 1, 0],
-      [0, 1, 0, 1, 1, 1, 1, 1, 0],
-      [0, 1, 1, 1, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0]
-    ];
-    for (let i = 0; i < MAX_HEIGHT; i++) {
-      for (let j = 0; j < MAX_WIDTH; j++) {
-        this.field[i][j].state = preset[i][j];
-      }
-    }
+  _loadField() {
+    return new Promise((resolve, reject) => {
+      // ステージ情報を読み込み
+      fetch("/static/index/preset.json")
+        .then(response => response.json())
+        .then(({ playerX, playerY, field }) => {
+          this.player.x = playerX;
+          this.player.y = playerY;
+          this.player.element.style.top = `${CELL_SIZE * this.player.y}px`;
+          this.player.element.style.left = `${CELL_SIZE * this.player.x}px`;
+          for (let i = 0; i < MAX_HEIGHT; i++) {
+            for (let j = 0; j < MAX_WIDTH; j++) {
+              this.field[i][j].state = field[i][j];
+            }
+          }
+          resolve();
+        });
+    });
   }
 
-  render() {
+  _render() {
     if (this._isMovingBall) {
       this._renderFieldInOrder();
     } else {
@@ -145,14 +128,14 @@ class Manager {
     40: () => this._moveField(0, 1)
   };
 
-  onKeyDown() {
+  _onKeyDown() {
     document.body.addEventListener("keydown", e => {
       if (!this._keydownMap.hasOwnProperty(e.keyCode) || this._isMovingBall) {
         return;
       }
       this._isMovingBall = true;
       this._keydownMap[e.keyCode]();
-      this.render();
+      this._render();
       if (this._isFinished()) {
         // アラートを出したあと若干動いたので1.1倍して猶予をもたせる
         setTimeout(() => {
@@ -187,4 +170,6 @@ class Manager {
     return true;
   }
 }
-const manager = new Manager();
+
+const app = new App();
+app.init();
