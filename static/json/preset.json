@@ -2,6 +2,8 @@
   "name": "preset",
   "playerX": 1,
   "playerY": 1,
+  "width": 9,
+  "height": 10,
   "field": [
     [0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 2, 1, 0, 1, 1, 1, 0, 0],

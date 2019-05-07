@@ -1,8 +1,7 @@
+import anime from "./anime.es.js";
 import Player from "./Player.js";
 import Cell from "./Cell.js";
 const CELL_SIZE = 36;
-const MAX_WIDTH = 9;
-const MAX_HEIGHT = 10;
 const MOVING_BALL_RENDERING_DURATION = 40;
 const COLOR_WALL = "black";
 const COLOR_NOT_PASSED_CELL = "white";
@@ -12,6 +11,8 @@ class App {
   table = document.querySelector("table");
   player = new Player();
   field = [];
+  maxWidth = 0;
+  maxHeight = 0;
 
   // ボールが動いている間、onkeydownイベントを発生させないよう監視する
   _isMovingBall = false;
@@ -19,44 +20,47 @@ class App {
   _passedCells = [];
 
   async init() {
-    this._initField();
     await this._loadField();
     this._render();
     this._onKeyDown();
   }
 
-  _initField() {
-    // テーブルつくる
-    for (let i = 0; i < MAX_HEIGHT; i++) {
-      const tr = document.createElement("tr");
-      this.field[i] = [];
-      for (let j = 0; j < MAX_WIDTH; j++) {
-        const td = document.createElement("td");
-        this.field[i][j] = new Cell(td);
-        tr.appendChild(td);
-      }
-      this.table.appendChild(tr);
-    }
-  }
-
   _loadField() {
     return new Promise((resolve, reject) => {
       // ステージ情報を読み込み
-      fetch("/static/index/preset.json")
+      fetch("/static/json/preset.json")
         .then(response => response.json())
-        .then(({ playerX, playerY, field }) => {
+        .then(json => {
+          const { width, height, playerX, playerY, field } = json;
+          this.maxWidth = width;
+          this.maxHeight = height;
           this.player.x = playerX;
           this.player.y = playerY;
           this.player.element.style.top = `${CELL_SIZE * this.player.y}px`;
           this.player.element.style.left = `${CELL_SIZE * this.player.x}px`;
-          for (let i = 0; i < MAX_HEIGHT; i++) {
-            for (let j = 0; j < MAX_WIDTH; j++) {
+          this._createField();
+          for (let i = 0; i < this.maxHeight; i++) {
+            for (let j = 0; j < this.maxWidth; j++) {
               this.field[i][j].state = field[i][j];
             }
           }
           resolve();
         });
     });
+  }
+
+  _createField() {
+    // テーブルつくる
+    for (let i = 0; i < this.maxHeight; i++) {
+      const tr = document.createElement("tr");
+      this.field[i] = [];
+      for (let j = 0; j < this.maxWidth; j++) {
+        const td = document.createElement("td");
+        this.field[i][j] = new Cell(td);
+        tr.appendChild(td);
+      }
+      this.table.appendChild(tr);
+    }
   }
 
   _render() {
@@ -70,8 +74,8 @@ class App {
   }
 
   _renderFieldInAll() {
-    for (let i = 0; i < MAX_HEIGHT; i++) {
-      for (let j = 0; j < MAX_WIDTH; j++) {
+    for (let i = 0; i < this.maxHeight; i++) {
+      for (let j = 0; j < this.maxWidth; j++) {
         const { state, element } = this.field[i][j];
         switch (state) {
           case 0:
@@ -153,16 +157,15 @@ class App {
     }
 
     if (this._isFinished()) {
-      // アラートを出したあと若干動いたので1.1倍して猶予をもたせる
       setTimeout(() => {
         alert("クリア!");
-      }, MOVING_BALL_RENDERING_DURATION * this._passedCells.length * 1.1);
+      }, MOVING_BALL_RENDERING_DURATION * this._passedCells.length);
     }
   }
 
   _isFinished() {
-    for (let i = 0; i < MAX_HEIGHT; i++) {
-      for (let j = 0; j < MAX_WIDTH; j++) {
+    for (let i = 0; i < this.maxHeight; i++) {
+      for (let j = 0; j < this.maxWidth; j++) {
         if (this.field[i][j].state === 1) {
           return false;
         }

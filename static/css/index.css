@@ -1,0 +1,22 @@
+.container {
+  position: relative;
+}
+
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+td {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+}
+
+#player {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: orange;
+  position: absolute;
+}

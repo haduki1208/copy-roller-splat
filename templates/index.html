@@ -5,34 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <title>Document</title>
-    <script type="module" src="/static/index/Player.js" defer></script>
-    <script type="module" src="/static/index/Cell.js" defer></script>
-    <script type="module" src="/static/index/main.js" defer></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/2.2.0/anime.js"></script>
-    <style>
-      .container {
-        position: relative;
-      }
-
-      table {
-        border-collapse: collapse;
-        border-spacing: 0;
-      }
-
-      td {
-        width: 36px;
-        height: 36px;
-        padding: 0;
-      }
-
-      #player {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        background-color: orange;
-        position: absolute;
-      }
-    </style>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/index.css' %}" />
+    <script type="module" src="{% static 'js/index.js' %}"></script>
   </head>
 
   <body>
